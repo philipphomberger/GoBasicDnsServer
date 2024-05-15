@@ -11,7 +11,6 @@ import (
 
 func Server() {
 	database := dns.LoadDatabase()
-	fmt.Print(database)
 	s, err := net.ResolveUDPAddr("udp", ":8090")
 	if err != nil {
 		fmt.Println(err)
@@ -30,34 +29,59 @@ func Server() {
 		_, addr, err := ln.ReadFromUDP(buffer)
 		var m dnsmessage.Message
 		err = m.Unpack(buffer)
-		fmt.Println(m)
-		fmt.Println("-> ", m.Questions[0].Name.String())
-
 		data := []byte(dns.GetIPAdress(m.Questions[0].Name.String(), database))
-		fmt.Printf("data: %s\n", string(data))
+
+		// Questions Header
+		var questionAnswer = layers.DNSQuestion{
+			Type:  layers.DNSTypeA,
+			Class: layers.DNSClassAny,
+			Name:  []byte(m.Questions[0].Name.String()),
+		}
+
+		var questionAnswerArray []layers.DNSQuestion
+		questionAnswerArray = append(questionAnswerArray, questionAnswer)
 
 		// Combine header, question, and record into one response message
 		var dnsAnswer layers.DNSResourceRecord
 		dnsAnswer.Type = layers.DNSTypeA
-		var ip string
-		ip = m.Questions[0].Name.String()
-		a, _, _ := net.ParseCIDR(ip + "/24")
-		dnsAnswer.Type = layers.DNSTypeA
-		dnsAnswer.IP = a
+		ipadress := net.ParseIP(string(data))
+		responseanswer := layers.DNSResourceRecord{
+			Name:  []byte(m.Questions[0].Name.String()),
+			Type:  layers.DNSTypeA,
+			Class: layers.DNSClassIN,
+			TTL:   0,
+			Data:  []byte(m.Questions[0].Name.String()),
+			IP:    ipadress,
+		}
+
+		var dnsAnswerArray []layers.DNSResourceRecord
+		dnsAnswerArray = append(dnsAnswerArray, responseanswer)
+
+		dnsAnswer.IP = ipadress
 		dnsAnswer.Name = []byte(m.Questions[0].Name.String())
-		fmt.Println(m.Questions[0].Name)
 		dnsAnswer.Class = layers.DNSClassIN
+		dnsAnswer.TTL = 300 // Set TTL to a reasonable value, e.g., 300 seconds
+
 		var replyMess layers.DNS
-		replyMess.QR = true
-		replyMess.ANCount = 1
-		replyMess.OpCode = layers.DNSOpCodeNotify
-		replyMess.AA = true
-		replyMess.Answers = append(replyMess.Answers, dnsAnswer)
 		replyMess.ID = m.ID
+		replyMess.QR = true
+		replyMess.OpCode = layers.DNSOpCodeQuery // Use Query opcode for standard query response
+		replyMess.AA = true
+		replyMess.RD = true
+		replyMess.RA = false // Assuming the resolver is recursive
 		replyMess.ResponseCode = layers.DNSResponseCodeNoErr
-		fmt.Print(replyMess.Answers[0].Name)
+		replyMess.QDCount = 1
+		replyMess.ANCount = 1
+		replyMess.Questions = questionAnswerArray
+		replyMess.Answers = dnsAnswerArray
+		replyMess.Additionals = dnsAnswerArray
+		replyMess.Authorities = dnsAnswerArray
+
 		buf := gopacket.NewSerializeBuffer()
-		opts := gopacket.SerializeOptions{} // See SerializeOptions for more details.
+		opts := gopacket.SerializeOptions{
+			FixLengths:       true,
+			ComputeChecksums: true,
+		} // See SerializeOptions for more details.
 		err = replyMess.SerializeTo(buf, opts)
 		if err != nil {
 			panic(err)
