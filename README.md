@@ -11,6 +11,4 @@ Learning:
 - Deeper understanding of How to set up a UDP Server in GoLang and how to send answers to the client. 
 
 Open:
-- Different kinds of DNY Types.
 - Error Handling then no Entry exists.
-- Allow to add, remove, edit entries with RESTAPI.
