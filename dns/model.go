@@ -14,24 +14,3 @@ type dnsentry struct {
 type Alldnsentry []dnsentry
 
 var dnsdatabase Alldnsentry
-
-func LoadDatabase() []dnsentry {
-	file, _ := os.Open("database.json")
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	var configuration Alldnsentry
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	return configuration
-}
-
-func GetIPAdress(dns string, database Alldnsentry) string {
-	for _, entry := range database {
-		if entry.Dns == dns {
-			return entry.Ip
-		}
-	}
-	return "Not exist!"
-}
