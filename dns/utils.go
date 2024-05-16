@@ -1,8 +1,11 @@
 package dns
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/google/gopacket/layers"
 	"net"
+	"os"
 )
 
 // SetUP Dns Answer
