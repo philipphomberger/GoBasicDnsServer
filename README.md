@@ -8,7 +8,4 @@ Learning:
 - How DNS Works under the Hood.
 - How to read DNS Protocol from binary.
 - How to write a DNS Protocol answer to the requestor.
-- Deeper understanding of How to set up a UDP Server in GoLang and how to send answers to the client. 
-
-Open:
-- Error Handling then no Entry exists.
+- Deeper understanding of How to set up a UDP Server in GoLang and how to send answers to the client.

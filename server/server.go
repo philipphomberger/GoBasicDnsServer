@@ -39,16 +39,32 @@ func Server() {
 func serveDNS(u *net.UDPConn, clientAddr net.Addr, request *layers.DNS) {
 	var err error
 	a, _, _ := net.ParseCIDR(dns.GetIPAdress(string(request.Questions[0].Name), dns.LoadDatabase()) + "/24")
-	buf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{} // See SerializeOptions for more details.
-	err = dns.ReplyDnsAnswer(a, request).SerializeTo(buf, opts)
-	if err != nil {
-		panic(err)
+	fmt.Println(a.String())
+	if a != nil {
+		buf := gopacket.NewSerializeBuffer()
+		opts := gopacket.SerializeOptions{} // See SerializeOptions for more details.
+		err = dns.ReplyDnsAnswer(a, request).SerializeTo(buf, opts)
+		if err != nil {
+			panic(err)
+		}
+		// Send Answer to DNS Client
+		to, err := u.WriteTo(buf.Bytes(), clientAddr)
+		if err != nil {
+			return
+		}
+		_ = to
+	} else {
+		buf := gopacket.NewSerializeBuffer()
+		opts := gopacket.SerializeOptions{}
+		err = dns.ReplyDnsAnswerNotFound(a, request).SerializeTo(buf, opts)
+		if err != nil {
+			panic(err)
+		}
+		// Send Answer to DNS Client
+		to, err := u.WriteTo(buf.Bytes(), clientAddr)
+		if err != nil {
+			return
+		}
+		_ = to
 	}
-	// Send Answer to DNS Client
-	to, err := u.WriteTo(buf.Bytes(), clientAddr)
-	if err != nil {
-		return
-	}
-	_ = to
 }

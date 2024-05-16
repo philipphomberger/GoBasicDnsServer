@@ -28,6 +28,16 @@ func ReplyDnsAnswer(a net.IP, replyMess *layers.DNS) *layers.DNS {
 	return replyMess
 }
 
+func ReplyDnsAnswerNotFound(a net.IP, replyMess *layers.DNS) *layers.DNS {
+	replyMess.QR = true
+	replyMess.ANCount = 1
+	replyMess.OpCode = layers.DNSOpCodeNotify
+	replyMess.AA = true
+	replyMess.Answers = append(replyMess.Answers, getDnsAnswer(a, replyMess))
+	replyMess.ResponseCode = layers.DNSResponseCodeNXDomain
+	return replyMess
+}
+
 func LoadDatabase() []dnsentry {
 	file, _ := os.Open("database.json")
 	defer file.Close()
