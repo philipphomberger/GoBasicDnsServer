@@ -10,3 +10,7 @@ Learning:
 - How to read DNS Protocol from binary.
 - How to write a DNS Protocol answer to the requestor.
 - Deeper understanding of How to set up a UDP Server in GoLang and how to send answers to the client.
+
+Backround Links:
+- https://pkg.go.dev/github.com/google/gopacket/layers#DNS
+- https://blog.bytebytego.com/p/how-does-the-domain-name-system-dns
