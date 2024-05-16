@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"golang.org/x/net/dns/dnsmessage"
 	"net"
 )
 
 func Server() {
-	database := dns.LoadDatabase()
 	s, err := net.ResolveUDPAddr("udp", ":8090")
 	if err != nil {
 		fmt.Println(err)
@@ -23,74 +21,42 @@ func Server() {
 		return
 	}
 	defer ln.Close()
-	buffer := make([]byte, 512)
-	// Accept incoming connections and handle them
 	for {
-		_, addr, err := ln.ReadFromUDP(buffer)
-		var m dnsmessage.Message
-		err = m.Unpack(buffer)
-		data := []byte(dns.GetIPAdress(m.Questions[0].Name.String(), database))
-
-		// Questions Header
-		var questionAnswer = layers.DNSQuestion{
-			Type:  layers.DNSTypeA,
-			Class: layers.DNSClassAny,
-			Name:  []byte(m.Questions[0].Name.String()),
-		}
-
-		var questionAnswerArray []layers.DNSQuestion
-		questionAnswerArray = append(questionAnswerArray, questionAnswer)
-
-		// Combine header, question, and record into one response message
-		var dnsAnswer layers.DNSResourceRecord
-		dnsAnswer.Type = layers.DNSTypeA
-		ipadress := net.ParseIP(string(data))
-		responseanswer := layers.DNSResourceRecord{
-			Name:  []byte(m.Questions[0].Name.String()),
-			Type:  layers.DNSTypeA,
-			Class: layers.DNSClassIN,
-			TTL:   0,
-			Data:  []byte(m.Questions[0].Name.String()),
-			IP:    ipadress,
-		}
-
-		var dnsAnswerArray []layers.DNSResourceRecord
-		dnsAnswerArray = append(dnsAnswerArray, responseanswer)
-
-		dnsAnswer.IP = ipadress
-		dnsAnswer.Name = []byte(m.Questions[0].Name.String())
-		dnsAnswer.Class = layers.DNSClassIN
-		dnsAnswer.TTL = 300 // Set TTL to a reasonable value, e.g., 300 seconds
-
-		var replyMess layers.DNS
-		replyMess.ID = m.ID
-		replyMess.QR = true
-		replyMess.OpCode = layers.DNSOpCodeQuery // Use Query opcode for standard query response
-		replyMess.AA = true
-		replyMess.RD = true
-		replyMess.RA = false // Assuming the resolver is recursive
-		replyMess.ResponseCode = layers.DNSResponseCodeNoErr
-		replyMess.QDCount = 1
-		replyMess.ANCount = 1
-		replyMess.Questions = questionAnswerArray
-		replyMess.Answers = dnsAnswerArray
-		replyMess.Additionals = dnsAnswerArray
-		replyMess.Authorities = dnsAnswerArray
-
-		buf := gopacket.NewSerializeBuffer()
-		opts := gopacket.SerializeOptions{
-			FixLengths:       true,
-			ComputeChecksums: true,
-		} // See SerializeOptions for more details.
-		err = replyMess.SerializeTo(buf, opts)
-		if err != nil {
-			panic(err)
-		}
-		_, err = ln.WriteTo(buf.Bytes(), addr)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
+		tmp := make([]byte, 1024)
+		_, addr, _ := ln.ReadFromUDP(tmp)
+		clientAddr := addr
+		packet := gopacket.NewPacket(tmp, layers.LayerTypeDNS, gopacket.Default)
+		dnsPacket := packet.Layer(layers.LayerTypeDNS)
+		tcp, _ := dnsPacket.(*layers.DNS)
+		serveDNS(ln, clientAddr, tcp)
 	}
+}
+
+func serveDNS(u *net.UDPConn, clientAddr net.Addr, request *layers.DNS) {
+	database := dns.LoadDatabase()
+	replyMess := request
+	var dnsAnswer layers.DNSResourceRecord
+	dnsAnswer.Type = layers.DNSTypeA
+	var ip string
+	var err error
+	// Get IP Adress from JSON Database.
+	ip = dns.GetIPAdress(string(request.Questions[0].Name), database)
+	a, _, _ := net.ParseCIDR(ip + "/24")
+	dnsAnswer.Type = layers.DNSTypeA
+	dnsAnswer.IP = a
+	dnsAnswer.Name = request.Questions[0].Name
+	dnsAnswer.Class = layers.DNSClassIN
+	replyMess.QR = true
+	replyMess.ANCount = 1
+	replyMess.OpCode = layers.DNSOpCodeNotify
+	replyMess.AA = true
+	replyMess.Answers = append(replyMess.Answers, dnsAnswer)
+	replyMess.ResponseCode = layers.DNSResponseCodeNoErr
+	buf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{} // See SerializeOptions for more details.
+	err = replyMess.SerializeTo(buf, opts)
+	if err != nil {
+		panic(err)
+	}
+	u.WriteTo(buf.Bytes(), clientAddr)
 }

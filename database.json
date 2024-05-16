@@ -1,14 +1,14 @@
 [
   {
-    "dns": "hello.homberger.",
+    "dns": "hello.homberger",
     "ip": "192.168.178.32"
   },
   {
-    "dns": "hello2.homberger.",
+    "dns": "hello2.homberger",
     "ip": "192.168.178.33"
   },
   {
-    "dns": "hello3.homberger.",
+    "dns": "hello3.homberger",
     "ip": "192.168.178.33"
   }
 ]
