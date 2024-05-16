@@ -12,4 +12,5 @@ Learning:
 
 Open:
 - Different kinds of DNY Types.
-- Error Handling than no Entry exists.
+- Error Handling then no Entry exists.
+- Allow to add, remove, edit entries with RESTAPI.
