@@ -1,6 +1,7 @@
 In this Project, I build for learning purposes a DNS Server with GoLang.
 Set up a Socket Server and convert binary data back to protocol. 
 Search for the Host in the JSON Database and return the IP Address with the DNS Protocol as binary.
+Build and Push Docker Image.
 
 Using google/gopacket package to not reimplement the DNS Protocol from Scretsh.
 
