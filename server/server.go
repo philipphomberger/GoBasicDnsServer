@@ -38,16 +38,14 @@ func Server() {
 
 func serveDNS(u *net.UDPConn, clientAddr net.Addr, request *layers.DNS) {
 	var err error
-	a, _, _ := net.ParseCIDR(dns.GetIPAdress(string(request.Questions[0].Name), dns.LoadDatabase()) + "/24")
-	fmt.Println(a.String())
+	a, _, _ := net.ParseCIDR(dnsclient.GetIPAdress(string(request.Questions[0].Name), dnsclient.LoadDatabase()) + "/24")
 	if a != nil {
 		buf := gopacket.NewSerializeBuffer()
 		opts := gopacket.SerializeOptions{} // See SerializeOptions for more details.
-		err = dns.ReplyDnsAnswer(a, request).SerializeTo(buf, opts)
+		err = dnsclient.ReplyDnsAnswer(a, request).SerializeTo(buf, opts)
 		if err != nil {
 			panic(err)
 		}
-		// Send Answer to DNS Client
 		to, err := u.WriteTo(buf.Bytes(), clientAddr)
 		if err != nil {
 			return
@@ -56,7 +54,7 @@ func serveDNS(u *net.UDPConn, clientAddr net.Addr, request *layers.DNS) {
 	} else {
 		buf := gopacket.NewSerializeBuffer()
 		opts := gopacket.SerializeOptions{}
-		err = dns.ReplyDnsAnswerNotFound(a, request).SerializeTo(buf, opts)
+		err = dnsclient.ReplyDnsAnswerNotFound(a, request).SerializeTo(buf, opts)
 		if err != nil {
 			panic(err)
 		}

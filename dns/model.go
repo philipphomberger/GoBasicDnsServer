@@ -1,4 +1,4 @@
-package dns
+package dnsclient
 
 type dnsentry struct {
 	Dns string `json:"dns"`
