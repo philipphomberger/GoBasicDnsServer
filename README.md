@@ -5,7 +5,8 @@ Build and Push Docker Image.
 
 Using google/gopacket package to not reimplement the DNS Protocol from Scretsh.
 
-![Uploading image.png…]()
+![image](https://github.com/philipphomberger/GoBasicDnsServer/assets/13222043/4dc9350f-942a-4d78-8349-7d2a3fa85987)
+
 
 
 Learning:
