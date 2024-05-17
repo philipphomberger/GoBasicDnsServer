@@ -1,4 +1,4 @@
-package dns
+package dnsclient
 
 import (
 	"encoding/json"
@@ -6,6 +6,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"net"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 // SetUP Dns Answer
@@ -56,5 +58,35 @@ func GetIPAdress(dns string, database Alldnsentry) string {
 			return entry.Ip
 		}
 	}
-	return "Not exist!"
+	var google string
+	google = GetIPFromGoogle(dns)
+	if google != "" {
+		return google
+	} else {
+		return ""
+	}
+}
+
+func GetIPFromGoogle(domain string) string {
+	var dnsList []string
+	dnsServer := "8.8.8.8"
+	cmd := exec.Command("nslookup", domain, dnsServer)
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Address: ") {
+			fmt.Println(line)
+			dnsList = append(dnsList, line)
+		}
+	}
+	var ip string
+	if len(dnsList) == 0 {
+		ip = ""
+		return ip
+	}
+	ip = dnsList[0]
+	return ip[9:len(ip)]
 }
